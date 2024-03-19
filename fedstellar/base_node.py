@@ -56,7 +56,7 @@ class BaseNode(node_pb2_grpc.NodeServicesServicer):
         self.host = socket.gethostbyname(host)
         self.port = port
         self.encrypt = encrypt
-        self.simulation = config.participant["scenario_args"]["simulation"]
+        # self.simulation = config.participant["scenario_args"]["simulation"]
         self.config = config
 
         # Message handlers

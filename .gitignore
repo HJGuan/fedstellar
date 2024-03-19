@@ -141,3 +141,9 @@ data/
 docker-compose.yml
 /fedstellar/waf/grafana/*
 /fedstellar/waf/loki/*
+
+# Ignore virtual environment files
+fedstellar-venv/
+
+# Ignore server log
+app/logs/server.log

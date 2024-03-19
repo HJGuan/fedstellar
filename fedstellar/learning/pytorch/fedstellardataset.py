@@ -98,13 +98,13 @@ class FedstellarDataset(Dataset, ABC):
             plt.xticks(range(self.num_classes))
             plt.title(f"Partition {i+1} class distribution {'(IID)' if self.iid else '(Non-IID)'}{' - ' + self.partition if not self.iid else ''}")
             plt.tight_layout()
-            path_to_save = f"{self.config.participant['tracking_args']['log_dir']}/{self.config.participant['scenario_args']['name']}/participant_{i+1}_class_distribution_{'iid' if self.iid else 'non_iid'}{'_' + self.partition if not self.iid else ''}.png"
-            plt.savefig(
-                path_to_save, dpi=300, bbox_inches="tight"
-            )
+            # path_to_save = f"{self.config.participant['tracking_args']['log_dir']}/{self.config.participant['scenario_args']['name']}/participant_{i+1}_class_distribution_{'iid' if self.iid else 'non_iid'}{'_' + self.partition if not self.iid else ''}.png"
+            # plt.savefig(
+            #     path_to_save, dpi=300, bbox_inches="tight"
+            # )
             plt.close()
 
-    def dirichlet_partition(self, dataset, alpha=0.5):
+    def dirichlet_partition(self, dataset, alpha=0.1):
         """
         Partition the dataset into multiple subsets using a Dirichlet distribution.
 
@@ -174,10 +174,11 @@ class FedstellarDataset(Dataset, ABC):
 
             # Print class distribution in the current partition
             class_counts = [0] * self.num_classes
+            print(f"[fedstellardataset.py] net_dataidx_map[i]: {net_dataidx_map[i]}")
             for idx in net_dataidx_map[i]:
                 _, label = dataset[idx]
                 class_counts[label] += 1
-            # print(f"Partition {i+1} class distribution: {class_counts}")
+            print(f"[fedstellardataset.py]Partition {i+1} class distribution: {class_counts}")
 
         return net_dataidx_map
 

@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import random
+import logging
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from fedstellar.learning.pytorch.mnist.mnist import MNISTDataset
@@ -24,6 +25,7 @@ from fedstellar.learning.pytorch.cifar10.models.cnnV2 import CIFAR10ModelCNN_V2
 from fedstellar.learning.pytorch.cifar10.models.cnnV3 import CIFAR10ModelCNN_V3
 from fedstellar.learning.pytorch.syscall.models.svm import SyscallModelSGDOneClassSVM
 from fedstellar.node import Node, MaliciousNode
+from fedstellar.nodeFedEP import NodeFedEP
 from fedstellar.learning.pytorch.datamodule import DataModule
 
 from sklearn.svm import LinearSVC
@@ -57,6 +59,8 @@ def main():
 
     rounds = config.participant["scenario_args"]["rounds"]
     epochs = config.participant["training_args"]["epochs"]
+
+    aggregation_algorithm = config.participant["aggregator_args"]["algorithm"]
 
     # Config of attacks
     attacks = config.participant["adversarial_args"]["attacks"]
@@ -160,6 +164,9 @@ def main():
         node_cls = Node
     else:
         node_cls = MaliciousNode
+    
+    if aggregation_algorithm == "FedEP":
+        node_cls = NodeFedEP
 
     # Adjust the GRPC_TIMEOUT and HEARTBEAT_TIMEOUT dynamically based on the number of nodes
     config.participant["GRPC_TIMEOUT"] = n_nodes * 10
@@ -202,7 +209,10 @@ def main():
         node.connect(addr)
         time.sleep(2)
 
-    # time.sleep(5)
+    if aggregation_algorithm == "FedEP":
+        print("[FedEP] preparing distribution statistics")
+        logging.info("[FedEP] preparing distribution statistics")
+        node.distribution_fitting_and_communication()
 
     if config.participant["device_args"]["start"]:
         time.sleep(config.participant["GRACE_TIME_START_FEDERATION"]) # Wait for the grace time to start the federation (default is 20 seconds)

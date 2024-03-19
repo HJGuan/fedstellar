@@ -52,6 +52,7 @@ from fedstellar.learning.aggregators.fedavg import FedAvg
 from fedstellar.learning.aggregators.krum import Krum
 from fedstellar.learning.aggregators.median import Median
 from fedstellar.learning.aggregators.trimmedmean import TrimmedMean
+from fedstellar.learning.aggregators.fedep import FedEP
 from fedstellar.learning.exceptions import DecodingParamsError, ModelNotMatchingError
 from fedstellar.learning.pytorch.lightninglearner import LightningLearner
 
@@ -229,6 +230,8 @@ class Node(BaseNode):
             self.aggregator = Median(node_name=self.get_name(), config=self.config)
         elif self.config.participant["aggregator_args"]["algorithm"] == "TrimmedMean":
             self.aggregator = TrimmedMean(node_name=self.get_name(), config=self.config)
+        elif self.config.participant["aggregator_args"]["algorithm"] == "FedEP":
+            self.aggregator = FedEP(node_name=self.get_name(), config=self.config)
         
         self.__trusted_nei = []
         self.__is_malicious = False
@@ -406,7 +409,7 @@ class Node(BaseNode):
                 logging.info(
                     f"({self.addr}) add_model (gRPC) | Model Reception when there is no trainset"
                 )
-                return node_pb2.ResponseMessage()
+                return node_pb2.ResponseMessage() 
 
             try:
                 if not self.__model_initialized_lock.locked():
@@ -859,7 +862,7 @@ class Node(BaseNode):
             pass
 
     #######################
-    #    Training Steps    #
+    #    Training Steps   #
     #######################
 
     def __wait_aggregated_model(self):

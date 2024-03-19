@@ -20,6 +20,11 @@ message Weights {
     int64 weight = 5;
 }
 
+message Distributions {
+    string source = 1;
+    bytes distribution = 2;
+}
+
 message HandShakeRequest {
     string addr = 1;
 }
@@ -33,4 +38,5 @@ service NodeServices {
     rpc disconnect(HandShakeRequest) returns (google.protobuf.Empty);
     rpc send_message(Message) returns (ResponseMessage);
     rpc add_model(Weights) returns (ResponseMessage);
+    rpc add_distribution(Distributions) returns (ResponseMessage);
 }

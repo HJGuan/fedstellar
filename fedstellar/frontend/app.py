@@ -8,6 +8,8 @@ import signal
 import sys
 import zipfile
 from urllib.parse import urlencode
+import logging
+
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Add the path two directories up to the system path
@@ -699,6 +701,7 @@ def fedstellar_remove_scenario(scenario_name):
 def fedstellar_scenario_statistics(scenario_name=None):
     if "user" in session.keys():
         # Adjust the filter to the scenario name
+        logging.info(f"session.keys() {session.keys()}")
         tensorboard_url = "/statistics/"
         if scenario_name is not None:
             tensorboard_url += f"?runFilter={scenario_name}"
