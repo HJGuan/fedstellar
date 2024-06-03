@@ -26,6 +26,7 @@ from fedstellar.learning.pytorch.cifar10.models.cnnV3 import CIFAR10ModelCNN_V3
 from fedstellar.learning.pytorch.syscall.models.svm import SyscallModelSGDOneClassSVM
 from fedstellar.node import Node, MaliciousNode
 from fedstellar.nodeFedEP import NodeFedEP
+from fedstellar.nodeSCAFFOLD import NodeSCAFFOLD
 from fedstellar.learning.pytorch.datamodule import DataModule
 
 from sklearn.svm import LinearSVC
@@ -103,52 +104,42 @@ def main():
     dataset = config.participant["data_args"]["dataset"]
     num_workers = config.participant["data_args"]["num_workers"]
     model = None
-    if dataset == "MNIST":
-        dataset = MNISTDataset(num_classes=10, sub_id=idx, number_sub=n_nodes, iid=iid, partition="percent", seed=42, config=config)
-        if model_name == "MLP":
-            model = MNISTModelMLP()
-        elif model_name == "CNN":
-            model = MNISTModelCNN()
-        else:
-            raise ValueError(f"Model {model} not supported")
-    elif dataset == "FashionMNIST":
-        dataset = FashionMNISTDataset(num_classes=10, sub_id=idx, number_sub=n_nodes, iid=iid, partition="percent", seed=42, config=config)
-        if model_name == "MLP":
-            model = FashionMNISTModelMLP()
-        elif model_name == "CNN":
-            model = FashionMNISTModelCNN()
-        else:
-            raise ValueError(f"Model {model} not supported")
-    elif dataset == "SYSCALL":
-        dataset = SYSCALLDataset(sub_id=idx, number_sub=n_nodes, root_dir=f"{sys.path[0]}/data", iid=iid)
-        if model_name == "MLP":
-            model = SyscallModelMLP()
-        elif model_name == "SVM":
-            model = SyscallModelSGDOneClassSVM()
-        elif model_name == "Autoencoder":
-            model = SyscallModelAutoencoder()
-        else:
-            raise ValueError(f"Model {model} not supported")
-    elif dataset == "CIFAR10":
-        dataset = CIFAR10Dataset(num_classes=10, sub_id=idx, number_sub=n_nodes, iid=iid, partition="percent", seed=42, config=config)
-        if model_name == "ResNet9":
-            model = CIFAR10ModelResNet(classifier="resnet9")
-        elif model_name == "ResNet18":
-            model = CIFAR10ModelResNet(classifier="resnet18")
-        elif model_name == "fastermobilenet":
-            model = FasterMobileNet()
-        elif model_name == "simplemobilenet":
-            model = SimpleMobileNetV1()
-        elif model_name == "CNN":
-            model = CIFAR10ModelCNN()
-        elif model_name == "CNN_V2":
-            model = CIFAR10ModelCNN_V2()
-        elif model_name == "CNN_V3":
-            model = CIFAR10ModelCNN_V3()
-        else:
-            raise ValueError(f"Model {model} not supported")
+    # Define a dictionary to map model names to their corresponding classes
+    model_classes = {
+        "MNIST": {
+            "MLP": MNISTModelMLP,
+            "CNN": MNISTModelCNN
+        },
+        "FashionMNIST": {
+            "MLP": FashionMNISTModelMLP,
+            "CNN": FashionMNISTModelCNN
+        },
+        "SYSCALL": {
+            "MLP": SyscallModelMLP,
+            "SVM": SyscallModelSGDOneClassSVM,
+            "Autoencoder": SyscallModelAutoencoder
+        },
+        "CIFAR10": {
+            "ResNet9": CIFAR10ModelResNet,
+            "ResNet18": CIFAR10ModelResNet,
+            "fastermobilenet": FasterMobileNet,
+            "simplemobilenet": SimpleMobileNetV1,
+            "CNN": CIFAR10ModelCNN,
+            "CNN_V2": CIFAR10ModelCNN_V2,
+            "CNN_V3": CIFAR10ModelCNN_V3
+        }
+    }
+
+    # Check if the model name exists in the dictionary
+    if dataset in model_classes and model_name in model_classes[dataset]:
+        # Get the corresponding model class
+        model_class = model_classes[dataset][model_name]
+        
+        # Instantiate the model class
+        model = model_class(usingSCAFFOLD=(aggregation_algorithm == "SCAFFOLD"))
     else:
-        raise ValueError(f"Dataset {dataset} not supported")
+        raise ValueError(f"Model {model_name} not supported for dataset {dataset}")
+
 
     dataset = DataModule(train_set=dataset.train_set, train_set_indices=dataset.train_indices_map, test_set=dataset.test_set, test_set_indices=dataset.test_indices_map, num_workers=num_workers, sub_id=idx, number_sub=n_nodes, indices_dir=indices_dir, label_flipping=label_flipping, data_poisoning=data_poisoning, poisoned_persent=poisoned_persent, poisoned_ratio=poisoned_ratio, targeted=targeted, target_label=target_label,
                          target_changed_label=target_changed_label, noise_type=noise_type)
@@ -167,6 +158,8 @@ def main():
     
     if aggregation_algorithm == "FedEP":
         node_cls = NodeFedEP
+    elif aggregation_algorithm == "SCAFFOLD":
+        node_cls = NodeSCAFFOLD
 
     # Adjust the GRPC_TIMEOUT and HEARTBEAT_TIMEOUT dynamically based on the number of nodes
     config.participant["GRPC_TIMEOUT"] = n_nodes * 10
@@ -188,7 +181,6 @@ def main():
         noise_type=noise_type
     )
 
-    node.start()
     time.sleep(config.participant["COLD_START_TIME"])
     # TODO: If it is an additional node, it should wait until additional_node_round to connect to the network
     # In order to do that, it should request the current round to the API

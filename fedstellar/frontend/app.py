@@ -701,7 +701,6 @@ def fedstellar_remove_scenario(scenario_name):
 def fedstellar_scenario_statistics(scenario_name=None):
     if "user" in session.keys():
         # Adjust the filter to the scenario name
-        logging.info(f"session.keys() {session.keys()}")
         tensorboard_url = "/statistics/"
         if scenario_name is not None:
             tensorboard_url += f"?runFilter={scenario_name}"

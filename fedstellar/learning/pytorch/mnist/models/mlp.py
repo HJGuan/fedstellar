@@ -8,7 +8,7 @@
 
 import torch
 from fedstellar.learning.pytorch.fedstellarmodel import FedstellarModel
-
+from fedstellar.learning.pytorch.ScaffoldOptimizer import ScaffoldOptimizer
 
 class MNISTModelMLP(FedstellarModel):
     """
@@ -22,13 +22,17 @@ class MNISTModelMLP(FedstellarModel):
             learning_rate=1e-3,
             metrics=None,
             confusion_matrix=None,
-            seed=None
+            seed=None,
+            usingSCAFFOLD=False,
+            
     ):
         super().__init__(in_channels, out_channels, learning_rate, metrics, confusion_matrix, seed)
 
         self.example_input_array = torch.zeros(1, 1, 28, 28)
         self.learning_rate = learning_rate
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.usingSCAFFOLD = usingSCAFFOLD
+        self.optimizer = None
 
         # Define layers of the model
         self.l1 = torch.nn.Linear(28 * 28, 256)
@@ -51,8 +55,11 @@ class MNISTModelMLP(FedstellarModel):
 
     def configure_optimizers(self):
         """ """
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        return optimizer
+        if self.usingSCAFFOLD is True:
+            self.optimizer = ScaffoldOptimizer(self.parameters(), lr=self.learning_rate)
+        else:
+            self.optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        return self.optimizer 
 
     def step(self, batch, phase):
         images, labels = batch
@@ -65,3 +72,8 @@ class MNISTModelMLP(FedstellarModel):
         self.process_metrics(phase, y_pred, labels, loss)
 
         return loss
+    
+    def get_client_controls(self):
+        return self.optimizer.ci[-1]
+
+

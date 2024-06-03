@@ -3,7 +3,7 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-import fedstellar.proto.node_pb2 as node__pb2
+import node_pb2 as node__pb2
 
 
 class NodeServicesStub(object):
@@ -38,6 +38,11 @@ class NodeServicesStub(object):
         self.add_distribution = channel.unary_unary(
                 '/node.NodeServices/add_distribution',
                 request_serializer=node__pb2.Distributions.SerializeToString,
+                response_deserializer=node__pb2.ResponseMessage.FromString,
+                )
+        self.add_model_scaffold = channel.unary_unary(
+                '/node.NodeServices/add_model_scaffold',
+                request_serializer=node__pb2.ScaffoldWeights.SerializeToString,
                 response_deserializer=node__pb2.ResponseMessage.FromString,
                 )
 
@@ -75,6 +80,12 @@ class NodeServicesServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def add_model_scaffold(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_NodeServicesServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -101,6 +112,11 @@ def add_NodeServicesServicer_to_server(servicer, server):
             'add_distribution': grpc.unary_unary_rpc_method_handler(
                     servicer.add_distribution,
                     request_deserializer=node__pb2.Distributions.FromString,
+                    response_serializer=node__pb2.ResponseMessage.SerializeToString,
+            ),
+            'add_model_scaffold': grpc.unary_unary_rpc_method_handler(
+                    servicer.add_model_scaffold,
+                    request_deserializer=node__pb2.ScaffoldWeights.FromString,
                     response_serializer=node__pb2.ResponseMessage.SerializeToString,
             ),
     }
@@ -194,6 +210,23 @@ class NodeServices(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/node.NodeServices/add_distribution',
             node__pb2.Distributions.SerializeToString,
+            node__pb2.ResponseMessage.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def add_model_scaffold(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/node.NodeServices/add_model_scaffold',
+            node__pb2.ScaffoldWeights.SerializeToString,
             node__pb2.ResponseMessage.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

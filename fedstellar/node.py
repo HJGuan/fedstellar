@@ -53,6 +53,7 @@ from fedstellar.learning.aggregators.krum import Krum
 from fedstellar.learning.aggregators.median import Median
 from fedstellar.learning.aggregators.trimmedmean import TrimmedMean
 from fedstellar.learning.aggregators.fedep import FedEP
+from fedstellar.learning.aggregators.scaffold import SCAFFOLD
 from fedstellar.learning.exceptions import DecodingParamsError, ModelNotMatchingError
 from fedstellar.learning.pytorch.lightninglearner import LightningLearner
 
@@ -232,6 +233,8 @@ class Node(BaseNode):
             self.aggregator = TrimmedMean(node_name=self.get_name(), config=self.config)
         elif self.config.participant["aggregator_args"]["algorithm"] == "FedEP":
             self.aggregator = FedEP(node_name=self.get_name(), config=self.config)
+        elif self.config.participant["aggregator_args"]["algorithm"] == "SCAFFOLD":
+            self.aggregator = SCAFFOLD(node_name=self.get_name(), config=self.config)
         
         self.__trusted_nei = []
         self.__is_malicious = False
@@ -918,13 +921,23 @@ class Node(BaseNode):
 
             # Aggregate Model
             if self.round is not None:
-                models_added = self.aggregator.add_model(
-                    self.learner.get_parameters(),
-                    [self.addr],
-                    self.learner.get_num_samples()[0],
-                    source=self.addr,
-                    round=self.round
-                )
+                if self.config.participant["aggregator_args"]["algorithm"] == "SCAFFOLD":
+                    models_added =self.aggregator.add_model(
+                        self.learner.get_parameters(),
+                        [self.addr],
+                        self.learner.get_num_samples()[0],
+                        source=self.addr,
+                        round=self.round
+                        control_variate=self.learner.get_control_variate()
+                    )
+                else:
+                    models_added = self.aggregator.add_model(
+                        self.learner.get_parameters(),
+                        [self.addr],
+                        self.learner.get_num_samples()[0],
+                        source=self.addr,
+                        round=self.round
+                    )
                 # send model added msg ---->> redundant (a node always owns its model)
                 self._neighbors.broadcast_msg(
                     self._neighbors.build_msg(

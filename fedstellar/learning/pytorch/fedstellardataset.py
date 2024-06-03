@@ -174,12 +174,9 @@ class FedstellarDataset(Dataset, ABC):
 
             # Print class distribution in the current partition
             class_counts = [0] * self.num_classes
-            print(f"[fedstellardataset.py] net_dataidx_map[i]: {net_dataidx_map[i]}")
             for idx in net_dataidx_map[i]:
                 _, label = dataset[idx]
                 class_counts[label] += 1
-            print(f"[fedstellardataset.py]Partition {i+1} class distribution: {class_counts}")
-
         return net_dataidx_map
 
     def homo_partition(self, dataset):

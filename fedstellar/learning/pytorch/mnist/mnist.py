@@ -100,7 +100,7 @@ class MNISTDataset(FedstellarDataset):
 
     def generate_non_iid_map(self, dataset, partition="percent"):
         if partition == "dirichlet":
-            partitions_map = self.dirichlet_partition(dataset, alpha=0.001)
+            partitions_map = self.dirichlet_partition(dataset, alpha=0.9)
         elif partition == "percent":
             # At now, percentage is fixed to 0.2
             partitions_map = self.percentage_partition(dataset, percentage=80)

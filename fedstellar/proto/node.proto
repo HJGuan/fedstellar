@@ -25,11 +25,20 @@ message Distributions {
     bytes distribution = 2;
 }
 
+message ScaffoldWeights {
+    string source = 1;
+    int32 round = 2;
+    bytes weights = 3;
+    repeated string contributors = 4;
+    int64 weight = 5;
+    bytes control_variates = 6;
+}
+
 message HandShakeRequest {
     string addr = 1;
 }
 
-message ResponseMessage {
+message ResponseMessage { 
     optional string error = 1;
 }
 
@@ -39,4 +48,5 @@ service NodeServices {
     rpc send_message(Message) returns (ResponseMessage);
     rpc add_model(Weights) returns (ResponseMessage);
     rpc add_distribution(Distributions) returns (ResponseMessage);
+    rpc add_model_scaffold(ScaffoldWeights) returns (ResponseMessage);
 }

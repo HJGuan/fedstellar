@@ -140,7 +140,6 @@ class LightningLearner(NodeLearner):
         '''
         return hashlib.sha256(self.encode_parameters()).hexdigest()
         
-
     def set_epochs(self, epochs):
         self.epochs = epochs
 
