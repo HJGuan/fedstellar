@@ -112,7 +112,7 @@ class Controller:
                 if version != __version__:
                     logging.info(f"Your Fedstellar version is {__version__} and the latest version is {version}. Please update your Fedstellar version.")
                     logging.info("You can update your Fedstellar version downloading the latest version from https://github.com/enriquetomasmb/fedstellar")
-                    sys.exit(0)
+                    # sys.exit(0)
                 else:
                     logging.info(f"Your Fedstellar version is {__version__} and it is the latest version.")
         except Exception as e:

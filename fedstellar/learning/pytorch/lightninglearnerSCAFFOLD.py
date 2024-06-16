@@ -1,5 +1,4 @@
-
-from lightninglearner import LightningLearner
+from .lightninglearner import LightningLearner
 
 class LightningLearnerSCAFFOLD(LightningLearner):
     def __init__(self, model, data, config=None, logger=None):
@@ -14,5 +13,8 @@ class LightningLearnerSCAFFOLD(LightningLearner):
 
     def get_client_controls(self):
         return self.model.get_client_controls()
+    
+    # def update_ci(self, ci):
+    #     self.model.update_ci(ci)
          
 

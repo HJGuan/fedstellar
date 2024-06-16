@@ -2,7 +2,10 @@ from abc import ABC, abstractmethod
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-
+from collections import defaultdict
+import torch
+import numpy as np
+from torch.utils.data import Subset
 
 class FedstellarDataset(Dataset, ABC):
     """
@@ -104,80 +107,80 @@ class FedstellarDataset(Dataset, ABC):
             # )
             plt.close()
 
-    def dirichlet_partition(self, dataset, alpha=0.1):
-        """
-        Partition the dataset into multiple subsets using a Dirichlet distribution.
+    # def dirichlet_partition(self, dataset, alpha=0.1):
+    #     """
+    #     Partition the dataset into multiple subsets using a Dirichlet distribution.
 
-        This function divides a dataset into a specified number of subsets (federated clients),
-        where each subset has a different class distribution. The class distribution in each
-        subset is determined by a Dirichlet distribution, making the partition suitable for 
-        simulating non-IID (non-Independently and Identically Distributed) data scenarios in 
-        federated learning.
+    #     This function divides a dataset into a specified number of subsets (federated clients),
+    #     where each subset has a different class distribution. The class distribution in each
+    #     subset is determined by a Dirichlet distribution, making the partition suitable for 
+    #     simulating non-IID (non-Independently and Identically Distributed) data scenarios in 
+    #     federated learning.
 
-        Args:
-            dataset (torch.utils.data.Dataset): The dataset to partition. It should have 
-                                                'data' and 'targets' attributes.
-            alpha (float): The concentration parameter of the Dirichlet distribution. A lower 
-                        alpha value leads to more imbalanced partitions.
+    #     Args:
+    #         dataset (torch.utils.data.Dataset): The dataset to partition. It should have 
+    #                                             'data' and 'targets' attributes.
+    #         alpha (float): The concentration parameter of the Dirichlet distribution. A lower 
+    #                     alpha value leads to more imbalanced partitions.
 
-        Returns:
-            dict: A dictionary where keys are subset indices (ranging from 0 to number_sub-1) 
-                and values are lists of indices corresponding to the samples in each subset.
+    #     Returns:
+    #         dict: A dictionary where keys are subset indices (ranging from 0 to number_sub-1) 
+    #             and values are lists of indices corresponding to the samples in each subset.
 
-        The function ensures that each class is represented in each subset but with varying 
-        proportions. The partitioning process involves iterating over each class, shuffling 
-        the indices of that class, and then splitting them according to the Dirichlet 
-        distribution. The function also prints the class distribution in each subset for reference.
+    #     The function ensures that each class is represented in each subset but with varying 
+    #     proportions. The partitioning process involves iterating over each class, shuffling 
+    #     the indices of that class, and then splitting them according to the Dirichlet 
+    #     distribution. The function also prints the class distribution in each subset for reference.
 
-        Example usage:
-            federated_data = dirichlet_partition(my_dataset, alpha=0.5)
-            # This creates federated data subsets with varying class distributions based on
-            # a Dirichlet distribution with alpha = 0.5.
-        """
-        np.random.seed(self.seed)
-        X_train, y_train = dataset.data.numpy(), dataset.targets.numpy()
-        min_size = 0
-        K = 10
-        N = y_train.shape[0]
-        n_nets = self.number_sub
-        net_dataidx_map = {}
+    #     Example usage:
+    #         federated_data = dirichlet_partition(my_dataset, alpha=0.5)
+    #         # This creates federated data subsets with varying class distributions based on
+    #         # a Dirichlet distribution with alpha = 0.5.
+    #     """
+    #     np.random.seed(self.seed)
+    #     X_train, y_train = dataset.data.numpy(), dataset.targets.numpy()
+    #     min_size = 0
+    #     K = 10
+    #     N = y_train.shape[0]
+    #     n_nets = self.number_sub
+    #     net_dataidx_map = {}
 
-        while min_size < 10:
-            idx_batch = [[] for _ in range(n_nets)]
-            for k in range(K):
-                idx_k = np.where(y_train == k)[0]
-                np.random.shuffle(idx_k)
-                proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
-                ## Balance
-                proportions = np.array(
-                    [
-                        p * (len(idx_j) < N / n_nets)
-                        for p, idx_j in zip(proportions, idx_batch)
-                    ]
-                )
-                proportions = proportions / proportions.sum()
-                proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
-                idx_batch = [
-                    idx_j + idx.tolist()
-                    for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))
-                ]
-                min_size = min([len(idx_j) for idx_j in idx_batch])
+    #     while min_size < 10:
+    #         idx_batch = [[] for _ in range(n_nets)]
+    #         for k in range(K):
+    #             idx_k = np.where(y_train == k)[0]
+    #             np.random.shuffle(idx_k)
+    #             proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
+    #             ## Balance
+    #             proportions = np.array(
+    #                 [
+    #                     p * (len(idx_j) < N / n_nets)
+    #                     for p, idx_j in zip(proportions, idx_batch)
+    #                 ]
+    #             )
+    #             proportions = proportions / proportions.sum()
+    #             proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
+    #             idx_batch = [
+    #                 idx_j + idx.tolist()
+    #                 for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))
+    #             ]
+    #             min_size = min([len(idx_j) for idx_j in idx_batch])
 
-        for j in range(n_nets):
-            np.random.shuffle(idx_batch[j])
-            net_dataidx_map[j] = idx_batch[j]
+    #     for j in range(n_nets):
+    #         np.random.shuffle(idx_batch[j])
+    #         net_dataidx_map[j] = idx_batch[j]
 
-        # partitioned_datasets = []
-        for i in range(self.number_sub):
-            #    subset = torch.utils.data.Subset(dataset, net_dataidx_map[i])
-            #    partitioned_datasets.append(subset)
+    #     # partitioned_datasets = []
+    #     for i in range(self.number_sub):
+    #         #    subset = torch.utils.data.Subset(dataset, net_dataidx_map[i])
+    #         #    partitioned_datasets.append(subset)
 
-            # Print class distribution in the current partition
-            class_counts = [0] * self.num_classes
-            for idx in net_dataidx_map[i]:
-                _, label = dataset[idx]
-                class_counts[label] += 1
-        return net_dataidx_map
+    #         # Print class distribution in the current partition
+    #         class_counts = [0] * self.num_classes
+    #         for idx in net_dataidx_map[i]:
+    #             _, label = dataset[idx]
+    #             class_counts[label] += 1
+    #     return net_dataidx_map
 
     def homo_partition(self, dataset):
         """
@@ -226,81 +229,226 @@ class FedstellarDataset(Dataset, ABC):
 
         return net_dataidx_map
 
-    def percentage_partition(self, dataset, percentage=0.1):
-        """
-        Partition a dataset into multiple subsets with a specified level of non-IID-ness.
+    # def percentage_partition(self, dataset, percentage=0.1):
+    #     """
+    #     Partition a dataset into multiple subsets with a specified level of non-IID-ness.
 
-        This function divides a dataset into several subsets where each subset has a 
-        different class distribution, controlled by the 'percentage' parameter. The 
-        'percentage' parameter determines the degree of non-IID-ness in the label distribution
-        among the federated data subsets.
+    #     This function divides a dataset into several subsets where each subset has a 
+    #     different class distribution, controlled by the 'percentage' parameter. The 
+    #     'percentage' parameter determines the degree of non-IID-ness in the label distribution
+    #     among the federated data subsets.
+
+    #     Args:
+    #         dataset (torch.utils.data.Dataset): The dataset to partition. It should have 
+    #                                             'data' and 'targets' attributes.
+    #         percentage (float): A value between 0 and 100 that specifies the desired 
+    #                             level of non-IID-ness for the labels of the federated data. 
+    #                             This percentage controls the imbalance in the class distribution 
+    #                             across different subsets.
+
+    #     Returns:
+    #         dict: A dictionary where keys are subset indices (ranging from 0 to number_sub-1) 
+    #             and values are lists of indices corresponding to the samples in each subset.
+
+    #     The function uses a Dirichlet distribution to create imbalanced proportions of classes
+    #     in each subset. A higher 'percentage' value leads to a more pronounced imbalance in 
+    #     class distribution across subsets. The function ensures that each subset is shuffled 
+    #     and has a unique distribution of classes.
+
+    #     Example usage:
+    #         federated_data = percentage_partition(my_dataset, 20)
+    #         # This creates federated data subsets with a 20% level of non-IID-ness.
+    #     """
+    #     np.random.seed(self.seed)
+        
+    #     if isinstance(dataset.data, np.ndarray):
+    #         X_train = dataset.data
+    #     elif hasattr(dataset.data, 'numpy'):  # Check if it's a tensor with .numpy() method
+    #         X_train = dataset.data.numpy()
+    #     else:  # If it's a list
+    #         X_train = np.asarray(dataset.data)
+
+    #     if isinstance(dataset.targets, np.ndarray):
+    #         y_train = dataset.targets
+    #     elif hasattr(dataset.targets, 'numpy'):  # Check if it's a tensor with .numpy() method
+    #         y_train = dataset.targets.numpy()
+    #     else:  # If it's a list
+    #         y_train = np.asarray(dataset.targets)
+        
+    #     num_classes = self.num_classes
+    #     num_subsets = self.number_sub
+    #     class_indices = {i: np.where(y_train == i)[0] for i in range(num_classes)}
+
+    #     imbalance_factor = percentage / 100
+
+    #     subset_indices = [[] for _ in range(num_subsets)]
+
+    #     for class_idx in range(num_classes):
+    #         indices = class_indices[class_idx]
+    #         np.random.shuffle(indices)
+    #         num_samples_class = len(indices)
+
+    #         proportions = np.random.dirichlet(np.repeat(1.0 + imbalance_factor, num_subsets))
+    #         proportions = (np.cumsum(proportions) * num_samples_class).astype(int)[:-1]
+    #         split_indices = np.split(indices, proportions)
+
+    #         for i, subset_idx in enumerate(split_indices):
+    #             subset_indices[i].extend(subset_idx)
+
+    #     for i in range(num_subsets):
+    #         np.random.shuffle(subset_indices[i])
+
+    #         class_counts = [0] * num_classes
+    #         for idx in subset_indices[i]:
+    #             _, label = dataset[idx]
+    #             class_counts[label] += 1
+    #         print(f"Partition {i+1} class distribution: {class_counts}")
+
+    #     partitioned_datasets = {i: subset_indices[i] for i in range(num_subsets)}
+
+    #     return partitioned_datasets
+    
+            
+    def build_classes_dict(dataset):
+        """
+        This function used to build a class dictionary containing each data samples index to each class.
+        """
+        classes_dict = {}
+        for idx, data in enumerate(dataset):
+            _, label = data
+            if torch.is_tensor(label):
+                label = label.numpy()[0]
+            else:
+                label = label
+            if label in classes_dict:
+                classes_dict[label].append(idx)
+            else:
+                classes_dict[label] = [idx]
+        return classes_dict
+
+
+    def dirichlet_sampling(self,dataset, num_client, data_size, alpha, seed):
+        np.random.seed(seed)
+        all_indices = np.arange(len(dataset))
+
+        np.random.shuffle(all_indices)
+
+        # You can control the data_size to control how much portion of dataset to be used
+        dataset = Subset(dataset, all_indices[:data_size])
+
+        data_classes = self.build_classes_dict(dataset)
+
+        client_dict = defaultdict(list)
+        num_classes = len(data_classes.keys())
+        image_nums = []
+
+        for n in range(num_classes):
+            image_num = []
+            np.random.shuffle(data_classes[n])
+            current_class_size = len(data_classes[n])
+            class_samples = current_class_size * np.random.dirichlet(np.array(num_client * [alpha]))
+            for client in range(num_client):
+                client_class_nums = int(round(class_samples[client]))
+                sampled_list = data_classes[n][:min(len(data_classes[n]), client_class_nums)]
+                image_num.append(len(sampled_list))
+                client_dict[client].extend(sampled_list)
+                data_classes[n] = data_classes[n][min(len(data_classes[n]), client_class_nums):]
+            image_nums.append(image_num)
+
+        image_nums_array = np.array(image_nums)
+
+        return client_dict, image_nums_array
+
+
+    def dirichlet_partition(self, dataset, alpha=5):
+        """
+        Partition the dataset into multiple subsets using a Dirichlet distribution.
+
+        This function divides a dataset into a specified number of subsets (federated clients),
+        where each subset has a different class distribution. The class distribution in each
+        subset is determined by a Dirichlet distribution, making the partition suitable for
+        simulating non-IID (non-Independently and Identically Distributed) data scenarios in
+        federated learning.
 
         Args:
-            dataset (torch.utils.data.Dataset): The dataset to partition. It should have 
+            dataset (torch.utils.data.Dataset): The dataset to partition. It should have
                                                 'data' and 'targets' attributes.
-            percentage (float): A value between 0 and 100 that specifies the desired 
-                                level of non-IID-ness for the labels of the federated data. 
-                                This percentage controls the imbalance in the class distribution 
-                                across different subsets.
+            alpha (float): The concentration parameter of the Dirichlet distribution. A lower
+                        alpha value leads to more imbalanced partitions.
 
         Returns:
-            dict: A dictionary where keys are subset indices (ranging from 0 to number_sub-1) 
+            dict: A dictionary where keys are subset indices (ranging from 0 to number_sub-1)
                 and values are lists of indices corresponding to the samples in each subset.
 
-        The function uses a Dirichlet distribution to create imbalanced proportions of classes
-        in each subset. A higher 'percentage' value leads to a more pronounced imbalance in 
-        class distribution across subsets. The function ensures that each subset is shuffled 
-        and has a unique distribution of classes.
+        The function ensures that each class is represented in each subset but with varying
+        proportions. The partitioning process involves iterating over each class, shuffling
+        the indices of that class, and then splitting them according to the Dirichlet
+        distribution. The function also prints the class distribution in each subset for reference.
 
         Example usage:
-            federated_data = percentage_partition(my_dataset, 20)
-            # This creates federated data subsets with a 20% level of non-IID-ness.
+            federated_data = dirichlet_partition(my_dataset, alpha=0.5)
+            # This creates federated data subsets with varying class distributions based on
+            # a Dirichlet distribution with alpha = 0.5.
         """
         np.random.seed(self.seed)
-        
-        if isinstance(dataset.data, np.ndarray):
+        if hasattr(dataset, 'data') and isinstance(dataset.data, np.ndarray):
             X_train = dataset.data
-        elif hasattr(dataset.data, 'numpy'):  # Check if it's a tensor with .numpy() method
-            X_train = dataset.data.numpy()
-        else:  # If it's a list
-            X_train = np.asarray(dataset.data)
+        else:
+            X_train = dataset.data.numpy()  # For tensors
 
-        if isinstance(dataset.targets, np.ndarray):
-            y_train = dataset.targets
-        elif hasattr(dataset.targets, 'numpy'):  # Check if it's a tensor with .numpy() method
-            y_train = dataset.targets.numpy()
-        else:  # If it's a list
-            y_train = np.asarray(dataset.targets)
-        
-        num_classes = self.num_classes
-        num_subsets = self.number_sub
-        class_indices = {i: np.where(y_train == i)[0] for i in range(num_classes)}
+        if hasattr(dataset, 'targets'):
+            if isinstance(dataset.targets, list):
+                y_train = np.array(dataset.targets)
+            elif isinstance(dataset.targets, np.ndarray):
+                y_train = dataset.targets
+            else:
+                y_train = dataset.targets.numpy()  # For tensors
+        else:
+            y_train = np.array([y for _, y in dataset])
 
-        imbalance_factor = percentage / 100
+        min_size = 0
+        K = 10
+        N = y_train.shape[0]
+        n_nets = self.number_sub
+        net_dataidx_map = {}
 
-        subset_indices = [[] for _ in range(num_subsets)]
+        while min_size < 10:
+            idx_batch = [[] for _ in range(n_nets)]
+            for k in range(K):
+                idx_k = np.where(y_train == k)[0]
+                np.random.shuffle(idx_k)
+                proportions = np.random.dirichlet(np.repeat(alpha, n_nets))
+                ## Balance
+                proportions = np.array(
+                    [
+                        p * (len(idx_j) < N / n_nets)
+                        for p, idx_j in zip(proportions, idx_batch)
+                    ]
+                )
+                proportions = proportions / proportions.sum()
+                proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
+                idx_batch = [
+                    idx_j + idx.tolist()
+                    for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))
+                ]
+                min_size = min([len(idx_j) for idx_j in idx_batch])
 
-        for class_idx in range(num_classes):
-            indices = class_indices[class_idx]
-            np.random.shuffle(indices)
-            num_samples_class = len(indices)
+        for j in range(n_nets):
+            np.random.shuffle(idx_batch[j])
+            net_dataidx_map[j] = idx_batch[j]
 
-            proportions = np.random.dirichlet(np.repeat(1.0 + imbalance_factor, num_subsets))
-            proportions = (np.cumsum(proportions) * num_samples_class).astype(int)[:-1]
-            split_indices = np.split(indices, proportions)
+        # partitioned_datasets = []
+        for i in range(self.number_sub):
+            #    subset = torch.utils.data.Subset(dataset, net_dataidx_map[i])
+            #    partitioned_datasets.append(subset)
 
-            for i, subset_idx in enumerate(split_indices):
-                subset_indices[i].extend(subset_idx)
-
-        for i in range(num_subsets):
-            np.random.shuffle(subset_indices[i])
-
-            class_counts = [0] * num_classes
-            for idx in subset_indices[i]:
+            # Print class distribution in the current partition
+            class_counts = [0] * self.num_classes
+            for idx in net_dataidx_map[i]:
                 _, label = dataset[idx]
                 class_counts[label] += 1
             print(f"Partition {i+1} class distribution: {class_counts}")
 
-        partitioned_datasets = {i: subset_indices[i] for i in range(num_subsets)}
+        return net_dataidx_map
 
-        return partitioned_datasets
+

@@ -158,6 +158,8 @@ class BaseNode(node_pb2_grpc.NodeServicesServicer):
         """
         running_state = self.__running
         if running_state != running:
+            print(running_state)
+            print(running)
             raise Exception(f"Node is {'not ' if running_state else ''}running.")
 
     def start(self, wait=False):

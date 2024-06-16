@@ -6,6 +6,9 @@ from math import floor
 import os
 import sys
 import torch
+import numpy as np
+from collections import defaultdict
+from torch.utils.data import Subset
 
 # import torch.multiprocessing
 # torch.multiprocessing.set_sharing_strategy("file_system")
@@ -98,12 +101,14 @@ class MNISTDataset(FedstellarDataset):
             transform=apply_transforms,
         )
 
-    def generate_non_iid_map(self, dataset, partition="percent"):
+    def generate_non_iid_map(self, dataset, partition="dirichlet"):
         if partition == "dirichlet":
-            partitions_map = self.dirichlet_partition(dataset, alpha=0.9)
+            partitions_map = self.dirichlet_partition(dataset)
         elif partition == "percent":
             # At now, percentage is fixed to 0.2
-            partitions_map = self.percentage_partition(dataset, percentage=80)
+            # partitions_map = self.percentage_partition(dataset, percentage=80)
+            # yuanzhe
+            partitions_map = self.dirichlet_sampling(dataset, self.number_sub, len(dataset), 0.9, self.seed)
         else:
             raise ValueError(f"Partition {partition} is not supported for Non-IID map")
 

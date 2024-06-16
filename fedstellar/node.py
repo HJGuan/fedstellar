@@ -847,6 +847,8 @@ class Node(BaseNode):
             self.learner.set_epochs(epochs)
             self.learner.create_trainer()
             self.__train_step()
+
+
         else:
             self.__start_thread_lock.release()
 
@@ -920,24 +922,25 @@ class Node(BaseNode):
                 self.__train()
 
             # Aggregate Model
+                
             if self.round is not None:
-                if self.config.participant["aggregator_args"]["algorithm"] == "SCAFFOLD":
-                    models_added =self.aggregator.add_model(
-                        self.learner.get_parameters(),
-                        [self.addr],
-                        self.learner.get_num_samples()[0],
-                        source=self.addr,
-                        round=self.round
-                        control_variate=self.learner.get_control_variate()
-                    )
-                else:
-                    models_added = self.aggregator.add_model(
-                        self.learner.get_parameters(),
-                        [self.addr],
-                        self.learner.get_num_samples()[0],
-                        source=self.addr,
-                        round=self.round
-                    )
+                # if self.config.participant["aggregator_args"]["algorithm"] == "SCAFFOLD":
+                #     models_added = self.aggregator.add_model_scaffold(
+                #         self.learner.get_parameters(),
+                #         [self.addr],
+                #         self.learner.get_num_samples()[0],
+                #         source=self.addr,
+                #         round=self.round,
+                #         control_variate=self.learner.get_control_variate(),
+                #     )
+                # else:
+                models_added = self.aggregator.add_model(
+                    self.learner.get_parameters(),
+                    [self.addr],
+                    self.learner.get_num_samples()[0],
+                    source=self.addr,
+                    round=self.round
+                )
                 # send model added msg ---->> redundant (a node always owns its model)
                 self._neighbors.broadcast_msg(
                     self._neighbors.build_msg(
